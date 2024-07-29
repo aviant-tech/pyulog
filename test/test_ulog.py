@@ -6,6 +6,7 @@ import os
 import inspect
 import unittest
 import tempfile
+from io import BytesIO
 
 from ddt import ddt, data
 
@@ -19,6 +20,22 @@ class TestULog(unittest.TestCase):
     '''
     Tests the ULog class
     '''
+
+    @data('sample')
+    def test_comparison(self, base_name):
+        '''
+        Test that the custom comparison method works as expected.
+        '''
+        ulog_file_name = os.path.join(TEST_PATH, base_name + '.ulg')
+        ulog1 = pyulog.ULog(ulog_file_name)
+        ulog2 = pyulog.ULog(ulog_file_name)
+        assert ulog1 == ulog2
+        assert ulog1 is not ulog2
+
+        # make them different in arbitrary field
+        ulog1.data_list[0].data['timestamp'][0] += 1
+        assert ulog1 != ulog2
+
 
     @data('sample',
           'sample_appended',
@@ -35,6 +52,25 @@ class TestULog(unittest.TestCase):
             original = pyulog.ULog(ulog_file_name)
             original.write_ulog(written_ulog_file_name)
             copied = pyulog.ULog(written_ulog_file_name)
+
+        # Some fields are not copied but dropped, so we cheat by modifying the original
+        original._sync_seq_cnt = 0  # pylint: disable=protected-access
+        original._appended_offsets = []  # pylint: disable=protected-access
+        original._incompat_flags[0] &= 0xFE  # pylint: disable=protected-access
+
+        assert copied == original
+
+    @data('sample')
+    def test_write_ulog_memory(self, base_name):
+        '''
+        Test that the write_ulog method can write bytes to memory.
+        '''
+        ulog_file_name = os.path.join(TEST_PATH, base_name + '.ulg')
+        original = pyulog.ULog(ulog_file_name)
+        with BytesIO() as bytes_handle:
+            original.write_ulog(bytes_handle)
+            bytes_handle.seek(0)
+            copied = pyulog.ULog(bytes_handle)
 
         for original_key, original_value in original.__dict__.items():
             copied_value = getattr(copied, original_key)
