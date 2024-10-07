@@ -28,8 +28,10 @@ class ULog(object):
     """
 
     ## constants ##
+    HEADER_SIZE = 16
     HEADER_BYTES = b'\x55\x4c\x6f\x67\x01\x12\x35'
     SYNC_BYTES = b'\x2F\x73\x13\x20\x25\x0C\xBB\x12'
+
 
     # message types
     MSG_TYPE_FORMAT = ord('F')
@@ -263,7 +265,7 @@ class ULog(object):
         header_data.extend(self.HEADER_BYTES)
         header_data.extend(struct.pack('B', self._file_version))
         header_data.extend(struct.pack('<Q', self._start_timestamp))
-        if len(header_data) != 16:
+        if len(header_data) != self.HEADER_SIZE:
             raise TypeError("Written header is too short")
 
         file.write(header_data)
@@ -882,8 +884,8 @@ class ULog(object):
         del self._file_handle
 
     def _read_file_header(self):
-        header_data = self._file_handle.read(16)
-        if len(header_data) != 16:
+        header_data = self._file_handle.read(self.HEADER_SIZE)
+        if len(header_data) != self.HEADER_SIZE:
             raise TypeError("Invalid file format (Header too short)")
         if header_data[:7] != self.HEADER_BYTES:
             raise TypeError("Invalid file format (Failed to parse header)")
@@ -925,7 +927,7 @@ class ULog(object):
                     break # end of section
                 elif header.msg_type == self.MSG_TYPE_FLAG_BITS:
                     # make sure this is the first message in the log
-                    if self._file_handle.tell() != 16 + 3 + header.msg_size:
+                    if self._file_handle.tell() != self.HEADER_SIZE + 3 + header.msg_size:
                         print('Error: FLAGS_BITS message must be first message. Offset:',
                               self._file_handle.tell())
                     msg_flag_bits = self._MessageFlagBits(data, header)
