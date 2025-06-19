@@ -52,7 +52,7 @@ setup(
         "numpy >= 1.25; python_version >= '3.9'",
     ],
     tests_require=['pytest', 'ddt'],
-    entry_points = {
+    entry_points={
         'console_scripts': [
             'ulog_extract_gps_dump=pyulog.extract_gps_dump:main',
             'ulog_info=pyulog.info:main',
@@ -62,6 +62,7 @@ setup(
             'ulog2kml=pyulog.ulog2kml:main',
             'ulog2rosbag=pyulog.ulog2rosbag:main',
             'ulog_migratedb=pyulog.migrate_db:main',
+            'ulog_check_armed=pyulog.utils:main',
         ],
     },
     packages=find_packages(),
